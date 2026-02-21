@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrê - Gestão e Catálogo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        // Corrigindo o erro: definindo a função no topo para estar disponível imediatamente
+        function handleLogoError(img) {
+            img.style.display = 'none';
+            // Aguarda o DOM estar pronto para mostrar o texto alternativo
+            window.addEventListener('DOMContentLoaded', () => {
+                const fallback = document.getElementById('catalogTextLogo');
+                if (fallback) fallback.classList.remove('hidden');
+            });
+        }
+    </script>
+    <style>
+        :root {
+            --entre-rust: #b45f3a;
+            --entre-green: #9ba57c;
+            --entre-cream: #fdfbf7;
+            --entre-dark: #5c5346;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--entre-cream);
+            color: var(--entre-dark);
+            transition: all 0.3s ease;
+        }
+
+        .brand-script { font-family: 'Pinyon Script', cursive; }
+        .brand-serif { font-family: 'Playfair Display', serif; }
+
+        .category-pill.active {
+            background-color: var(--entre-rust);
+            color: white;
+            border-color: var(--entre-rust);
+            box-shadow: 0 4px 12px rgba(180, 95, 58, 0.2);
+        }
+
+        .product-card {
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            background: white;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(180, 95, 58, 0.08);
+        }
+
+        .btn-rust { background-color: var(--entre-rust); color: white; }
+        .btn-green { background-color: var(--entre-green); color: white; }
+        
+        .page-fade {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-display {
+            max-width: 240px;
+            mix-blend-mode: multiply;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--entre-rust) !important;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+
+        .modal-overlay {
+            background-color: rgba(92, 83, 70, 0.7);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Sistema de Navegação Administrativa -->
+    <nav class="bg-white border-b border-stone-200 py-3 px-6 sticky top-0 z-50 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-2">
+            <div id="authStatus" class="w-2 h-2 rounded-full bg-stone-200"></div>
+            <span class="text-[var(--entre-rust)] font-bold text-[10px] tracking-[0.3em] uppercase">Sistema Entrê</span>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="switchPage('catalog')" id="navCatalog" class="text-[10px] uppercase tracking-widest font-bold px-5 py-2.5 rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200 transition">
+                <i class="fas fa-eye mr-2"></i> Catálogo
+            </button>
+            <button onclick="handleAdminAccess()" id="navAdmin" class="text-[10px] uppercase tracking-widest font-bold px-5 py-2.5 rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200 transition">
+                <i class="fas fa-lock mr-2"></i> Gestão
+            </button>
+        </div>
+    </nav>
+
+    <!-- PÁGINA: CATÁLOGO -->
+    <div id="page-catalog" class="page-fade">
+        <header class="pt-16 pb-12 text-center">
+            <div class="logo-container inline-block">
+                <div id="catalogLogoContainer">
+                    <img id="displayLogoHeader" src="Logo Entre.jpeg" alt="Entrê" class="logo-display mx-auto" onerror="handleLogoError(this)">
+                    <h1 id="catalogTextLogo" class="hidden brand-script text-8xl text-[var(--entre-rust)]">Entrê</h1>
+                </div>
+                <p class="tracking-[0.3em] text-[var(--entre-green)] text-[10px] md:text-xs mt-4 font-bold uppercase">decoração afetiva</p>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-6 py-8">
+            <div class="flex flex-col items-center mb-16 gap-10">
+                <div id="categoryFilters" class="flex flex-wrap gap-3 justify-center"></div>
+                
+                <div class="relative w-full max-w-lg">
+                    <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-stone-300"></i>
+                    <input type="text" id="searchInput" placeholder="O que deseja para o seu lar?" 
+                        class="w-full pl-14 pr-8 py-4 rounded-full border border-stone-100 bg-white shadow-sm italic outline-none transition-all focus:ring-2 focus:ring-[var(--entre-green)]/20">
+                </div>
+            </div>
+
+            <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12"></div>
+            <div id="emptyState" class="hidden text-center py-32 text-stone-300 italic font-light">Nenhuma peça encontrada no acervo.</div>
+        </main>
+    </div>
+
+    <!-- PÁGINA: ADMINISTRAÇÃO -->
+    <div id="page-admin" class="hidden page-fade container mx-auto px-6 py-12 max-w-6xl">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6 border-b border-stone-100 pb-10">
+            <div>
+                <h2 class="brand-serif text-4xl font-bold text-stone-700">Painel de Gestão</h2>
+                <p class="text-stone-400 text-sm mt-2 font-light italic">Área Restrita - Gestão da Marca</p>
+            </div>
+            <div class="flex gap-4 w-full md:w-auto">
+                <button onclick="logoutAdmin()" class="bg-red-50 text-red-400 px-6 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-red-100 transition">
+                    Sair
+                </button>
+                <button onclick="openConfig()" class="flex-1 md:flex-none bg-white border border-stone-200 text-stone-500 px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-stone-50 transition shadow-sm">
+                    <i class="fas fa-sliders-h mr-2"></i> Definições
+                </button>
+                <button onclick="openForm()" class="flex-1 md:flex-none btn-rust px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg hover:scale-105 transition">
+                    <i class="fas fa-plus mr-2"></i> Nova Peça
+                </button>
+            </div>
+        </div>
+
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400 mb-6 flex items-center gap-3">
+            <span class="w-8 h-[1px] bg-stone-200"></span> Inventário Atual
+        </h3>
+        
+        <div class="bg-white rounded-[2rem] border border-stone-100 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-stone-50 text-stone-400 text-[9px] uppercase tracking-widest font-bold">
+                        <tr>
+                            <th class="px-8 py-5">Produto</th>
+                            <th class="px-8 py-5">REF</th>
+                            <th class="px-8 py-5">Categoria</th>
+                            <th class="px-8 py-5">Preço</th>
+                            <th class="px-8 py-5 text-center">Gestão</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody" class="divide-y divide-stone-50 text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: LOGIN / ACESSO RESTRITO -->
+    <div id="modalAuth" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0" onclick="closeModal('modalAuth')"></div>
+        <div class="bg-white rounded-[2.5rem] max-w-sm w-full relative z-10 shadow-2xl p-10 text-center">
+            <div class="w-16 h-16 bg-orange-50 text-[var(--entre-rust)] rounded-full flex items-center justify-center text-2xl mx-auto mb-6">
+                <i class="fas fa-fingerprint"></i>
+            </div>
+            <h3 class="brand-serif text-2xl font-bold mb-2 text-stone-700">Área Privada</h3>
+            <p class="text-stone-400 text-[10px] uppercase tracking-widest mb-8">Insira a chave de acesso</p>
+            <input type="password" id="adminKeyInput" placeholder="Senha" 
+                class="w-full border-b-2 border-stone-100 py-3 text-center outline-none focus:border-[var(--entre-rust)] transition-all mb-8 tracking-widest">
+            <button onclick="loginAdmin()" class="w-full btn-rust py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg">Entrar</button>
+        </div>
+    </div>
+
+    <!-- MODAL: DETALHES -->
+    <div id="modalDetail" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 md:p-10">
+        <div class="modal-overlay absolute inset-0" onclick="closeModal('modalDetail')"></div>
+        <div class="bg-white rounded-[3rem] max-w-5xl w-full relative z-10 overflow-hidden shadow-2xl flex flex-col md:flex-row border border-stone-100">
+            <button onclick="closeModal('modalDetail')" class="absolute top-8 right-8 text-stone-300 hover:text-[var(--entre-rust)] z-20 transition-all">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+            <div class="md:w-1/2 h-80 md:h-auto bg-stone-50">
+                <img id="viewImg" src="" class="w-full h-full object-cover">
+            </div>
+            <div class="md:w-1/2 p-10 md:p-16 flex flex-col justify-center">
+                <div class="flex justify-between items-center mb-6">
+                    <span id="viewCategory" class="text-[var(--entre-green)] text-[10px] uppercase tracking-[0.4em] font-bold"></span>
+                    <span id="viewCode" class="text-stone-300 text-[10px] font-bold px-3 py-1 bg-stone-50 rounded-full border border-stone-100"></span>
+                </div>
+                <h2 id="viewTitle" class="brand-serif text-4xl md:text-5xl font-bold mb-8 text-stone-700 leading-tight"></h2>
+                <div class="w-12 h-0.5 bg-[var(--entre-rust)] mb-8 opacity-20"></div>
+                <p id="viewDesc" class="text-stone-500 mb-12 italic font-light leading-relaxed text-lg"></p>
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-8">
+                    <span id="viewPrice" class="text-4xl font-light text-[var(--entre-dark)]"></span>
+                    <a id="viewWaBtn" href="#" target="_blank" class="w-full sm:w-auto btn-rust px-10 py-5 rounded-full font-bold shadow-xl flex items-center justify-center gap-3 hover:scale-105 transition">
+                        <i class="fab fa-whatsapp text-xl"></i> Encomendar Peça
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIGURAÇÕES -->
+    <div id="modalConfig" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0" onclick="closeModal('modalConfig')"></div>
+        <div class="bg-white rounded-[2.5rem] max-w-2xl w-full relative z-10 shadow-2xl p-10 md:p-12 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <h3 class="brand-serif text-3xl font-bold mb-10 text-stone-700">Definições da Loja</h3>
+            
+            <div class="mb-12">
+                <label class="text-[10px] font-bold uppercase text-stone-400 tracking-widest block mb-4 italic">Logótipo da Empresa</label>
+                <div class="flex flex-col sm:flex-row gap-8 items-center bg-stone-50 p-8 rounded-[2rem] border border-dashed border-stone-200">
+                    <div class="w-28 h-28 bg-white rounded-2xl border border-stone-100 flex items-center justify-center overflow-hidden shadow-sm">
+                        <img id="configLogoPreview" src="" class="max-w-full max-h-full object-contain hidden">
+                        <i id="configLogoPlaceholder" class="fas fa-image text-stone-100 text-4xl"></i>
+                    </div>
+                    <div class="flex-1 w-full">
+                        <input type="text" id="configLogoUrl" placeholder="Link da imagem ou 'Logo Entre.jpeg'" 
+                            class="w-full border-b border-stone-200 py-3 bg-transparent outline-none text-sm mb-3 placeholder:text-stone-300">
+                        <p class="text-[10px] text-stone-400 font-light">Se a imagem estiver na mesma pasta, use apenas o nome do ficheiro.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-10">
+                <label class="text-[10px] font-bold uppercase text-stone-400 tracking-widest block mb-4 italic">Gestão de Categorias</label>
+                <div class="flex gap-3 mb-6">
+                    <input type="text" id="newCategoryInput" placeholder="Ex: Natal" 
+                        class="flex-1 border-b border-stone-200 py-3 outline-none text-sm placeholder:text-stone-300 focus:border-[var(--entre-green)]">
+                    <button onclick="addCategory()" class="btn-green px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest">Adicionar</button>
+                </div>
+                <div id="configCategoryList" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="flex justify-end pt-6 border-t border-stone-50">
+                <button onclick="saveSettings()" class="btn-rust px-12 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest shadow-xl">Guardar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: FORMULÁRIO DE PRODUTO -->
+    <div id="modalForm" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0" onclick="closeModal('modalForm')"></div>
+        <div class="bg-white rounded-[2.5rem] max-w-xl w-full relative z-10 shadow-2xl p-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <h3 id="formTitle" class="brand-serif text-3xl font-bold mb-8 text-stone-700">Nova Peça</h3>
+            <form id="productForm" class="space-y-6">
+                <input type="hidden" id="formId">
+                <div>
+                    <label class="text-[9px] font-bold uppercase text-stone-400 tracking-widest block mb-1">Título da Peça</label>
+                    <input type="text" id="fTitle" required class="w-full border-b border-stone-100 py-3 outline-none text-stone-700">
+                </div>
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <label class="text-[9px] font-bold uppercase text-stone-400 tracking-widest block mb-1">Referência</label>
+                        <input type="text" id="fCode" required maxlength="5" placeholder="GUI01" class="w-full border-b border-stone-100 py-3 outline-none uppercase text-stone-700">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold uppercase text-stone-400 tracking-widest block mb-1">Preço (R$)</label>
+                        <input type="number" step="0.01" id="fPrice" required class="w-full border-b border-stone-100 py-3 outline-none text-stone-700">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold uppercase text-stone-400 tracking-widest block mb-1">Categoria</label>
+                    <select id="fCategory" class="w-full border-b border-stone-100 py-3 bg-white outline-none text-stone-700 cursor-pointer"></select>
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold uppercase text-stone-400 tracking-widest block mb-1">Link da Imagem</label>
+                    <input type="text" id="fImage" required placeholder="https://..." class="w-full border-b border-stone-100 py-3 text-xs outline-none text-stone-400">
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold uppercase text-stone-400 tracking-widest block mb-1">Descrição</label>
+                    <textarea id="fDesc" rows="3" required class="w-full border border-stone-100 p-4 rounded-2xl text-sm italic outline-none text-stone-500 focus:bg-stone-50 transition-colors"></textarea>
+                </div>
+                <div class="flex gap-4 pt-6">
+                    <button type="button" onclick="closeModal('modalForm')" class="flex-1 py-4 text-stone-300 font-bold uppercase text-[10px] tracking-widest">Cancelar</button>
+                    <button type="submit" class="flex-1 btn-rust py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-xl">Guardar Peça</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RODAPÉ -->
+    <footer class="bg-white py-24 text-center border-t border-stone-50 mt-24">
+        <div class="max-w-[120px] mx-auto opacity-60 mb-8">
+            <img id="displayLogoFooter" src="Logo Entre.jpeg" alt="Entrê" class="w-full mix-blend-multiply hidden" onerror="this.style.display='none'">
+        </div>
+        <p class="text-[var(--entre-green)] text-[10px] uppercase tracking-[0.5em] font-bold opacity-40">Feito à mão • Feito com alma</p>
+    </footer>
+
+    <script>
+        const WHATSAPP_NUMBER = "5511999999999"; 
+        const ADMIN_PASSWORD = "entre2024"; // Defina a senha aqui
+        
+        let settings = JSON.parse(localStorage.getItem('entre_settings')) || {
+            logo: "Logo Entre.jpeg",
+            categories: ["Guirlanda", "Escapulário de porta"]
+        };
+
+        let products = JSON.parse(localStorage.getItem('entre_products')) || [
+            { id: 1, code: "GUI01", title: "Guirlanda Boas-Vindas Floral", category: "Guirlanda", price: 145.0, description: "Uma receção suave para o seu lar com flores preservadas e aro de cipó natural.", image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800" },
+            { id: 2, code: "ESC01", title: "Escapulário Coração Sagrado", category: "Escapulário de porta", price: 89.0, description: "Proteção bordada à mão em linho puro, com contas de madeira e acabamento em seda.", image: "https://images.unsplash.com/photo-1595183300896-48325605f639?w=800" }
+        ];
+
+        let currentCategory = "Todos";
+        let searchTerm = "";
+        let isAdmin = sessionStorage.getItem('entre_admin') === 'true';
+
+        function init() {
+            applySettings();
+            renderCatalog();
+            renderAdmin();
+            renderFilters();
+            updateAuthUI();
+        }
+
+        function applySettings() {
+            const headerLogo = document.getElementById('displayLogoHeader');
+            const headerText = document.getElementById('catalogTextLogo');
+            const footerLogo = document.getElementById('displayLogoFooter');
+
+            if(settings.logo) {
+                headerLogo.src = settings.logo;
+                headerLogo.style.display = 'block';
+                headerText.classList.add('hidden');
+                footerLogo.src = settings.logo;
+                footerLogo.classList.remove('hidden');
+            } else {
+                headerLogo.style.display = 'none';
+                headerText.classList.remove('hidden');
+                footerLogo.classList.add('hidden');
+            }
+        }
+
+        // --- SISTEMA DE ACESSO ---
+        function handleAdminAccess() {
+            if (isAdmin) {
+                switchPage('admin');
+            } else {
+                document.getElementById('modalAuth').classList.remove('hidden');
+            }
+        }
+
+        function loginAdmin() {
+            const input = document.getElementById('adminKeyInput');
+            if (input.value === ADMIN_PASSWORD) {
+                isAdmin = true;
+                sessionStorage.setItem('entre_admin', 'true');
+                document.getElementById('modalAuth').classList.add('hidden');
+                updateAuthUI();
+                switchPage('admin');
+                input.value = "";
+            } else {
+                alert("Chave de acesso incorreta.");
+            }
+        }
+
+        function logoutAdmin() {
+            isAdmin = false;
+            sessionStorage.removeItem('entre_admin');
+            updateAuthUI();
+            switchPage('catalog');
+        }
+
+        function updateAuthUI() {
+            const status = document.getElementById('authStatus');
+            const navBtn = document.getElementById('navAdmin');
+            if (isAdmin) {
+                status.classList.replace('bg-stone-200', 'bg-green-400');
+                navBtn.innerHTML = '<i class="fas fa-cog mr-2"></i> Gestão';
+            } else {
+                status.classList.replace('bg-green-400', 'bg-stone-200');
+                navBtn.innerHTML = '<i class="fas fa-lock mr-2"></i> Gestão';
+            }
+        }
+
+        // --- GESTÃO DE DADOS ---
+        function openConfig() {
+            document.getElementById('configLogoUrl').value = settings.logo;
+            updateLogoPreview(settings.logo);
+            renderConfigCategories();
+            document.getElementById('modalConfig').classList.remove('hidden');
+        }
+
+        function updateLogoPreview(url) {
+            const img = document.getElementById('configLogoPreview');
+            const placeholder = document.getElementById('configLogoPlaceholder');
+            if(url) {
+                img.src = url;
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                img.onerror = () => { img.classList.add('hidden'); placeholder.classList.remove('hidden'); };
+            } else {
+                img.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('configLogoUrl').addEventListener('input', (e) => updateLogoPreview(e.target.value));
+
+        function renderConfigCategories() {
+            const list = document.getElementById('configCategoryList');
+            list.innerHTML = settings.categories.map(c => `
+                <div class="flex items-center gap-3 bg-stone-50 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest text-stone-500 border border-stone-100">
+                    ${c}
+                    <button onclick="removeCategory('${c}')" class="text-stone-300 hover:text-red-400 transition-colors"><i class="fas fa-times-circle"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function addCategory() {
+            const input = document.getElementById('newCategoryInput');
+            const val = input.value.trim();
+            if(val && !settings.categories.includes(val)) {
+                settings.categories.push(val);
+                input.value = "";
+                renderConfigCategories();
+            }
+        }
+
+        function removeCategory(cat) {
+            if(confirm(`Pretende remover a categoria "${cat}"?`)) {
+                settings.categories = settings.categories.filter(c => c !== cat);
+                renderConfigCategories();
+            }
+        }
+
+        function saveSettings() {
+            settings.logo = document.getElementById('configLogoUrl').value.trim();
+            localStorage.setItem('entre_settings', JSON.stringify(settings));
+            applySettings();
+            renderFilters();
+            closeModal('modalConfig');
+        }
+
+        function switchPage(page) {
+            document.getElementById('page-catalog').classList.toggle('hidden', page !== 'catalog');
+            document.getElementById('page-admin').classList.toggle('hidden', page !== 'admin');
+            
+            document.getElementById('navCatalog').className = page === 'catalog' ? 'text-[10px] uppercase tracking-widest font-bold px-5 py-2.5 rounded-full bg-[var(--entre-rust)] text-white shadow-md transition-all' : 'text-[10px] uppercase tracking-widest font-bold px-5 py-2.5 rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200 transition-all';
+            document.getElementById('navAdmin').className = page === 'admin' ? 'text-[10px] uppercase tracking-widest font-bold px-5 py-2.5 rounded-full bg-[var(--entre-green)] text-white shadow-md transition-all' : 'text-[10px] uppercase tracking-widest font-bold px-5 py-2.5 rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200 transition-all';
+        }
+
+        function renderFilters() {
+            const cats = ["Todos", ...settings.categories];
+            document.getElementById('categoryFilters').innerHTML = cats.map(c => `
+                <button onclick="filterCat('${c}')" class="category-pill px-8 py-3 rounded-full border border-stone-100 bg-white text-stone-400 text-[10px] font-bold uppercase tracking-widest transition-all ${currentCategory === c ? 'active shadow-sm' : ''}">${c}</button>
+            `).join('');
+        }
+
+        function filterCat(c) { currentCategory = c; renderFilters(); renderCatalog(); }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchTerm = e.target.value.toLowerCase();
+            renderCatalog();
+        });
+
+        function renderCatalog() {
+            const filtered = products.filter(p => {
+                const matchesCat = currentCategory === "Todos" || p.category === currentCategory;
+                const matchesSearch = p.title.toLowerCase().includes(searchTerm) || p.code.toLowerCase().includes(searchTerm);
+                return matchesCat && matchesSearch;
+            });
+            document.getElementById('emptyState').classList.toggle('hidden', filtered.length > 0);
+            document.getElementById('productGrid').innerHTML = filtered.map(p => `
+                <div class="product-card rounded-[3rem] overflow-hidden cursor-pointer" onclick="viewProduct(${p.id})">
+                    <div class="h-[22rem] overflow-hidden relative group">
+                        <img src="${p.image}" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+                        <div class="absolute top-8 left-8 bg-white/90 backdrop-blur px-5 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest text-[var(--entre-green)] shadow-sm">${p.category}</div>
+                    </div>
+                    <div class="p-10">
+                        <h3 class="brand-serif text-3xl mb-4 text-stone-700">${p.title}</h3>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-light text-[var(--entre-rust)]">R$ ${p.price.toFixed(2).replace('.', ',')}</span>
+                            <span class="text-[var(--entre-green)] text-[10px] font-bold uppercase tracking-widest opacity-40 group-hover:opacity-100 transition-opacity">Explorar</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewProduct(id) {
+            const p = products.find(x => x.id === id);
+            document.getElementById('viewImg').src = p.image;
+            document.getElementById('viewTitle').innerText = p.title;
+            document.getElementById('viewCategory').innerText = p.category;
+            document.getElementById('viewCode').innerText = `REF: ${p.code}`;
+            document.getElementById('viewDesc').innerText = p.description;
+            document.getElementById('viewPrice').innerText = `R$ ${p.price.toFixed(2).replace('.', ',')}`;
+            const msg = encodeURIComponent(`Olá Entrê! Fiquei encantado(a) com a peça "${p.title}" (Ref: ${p.code}) e gostaria de encomendar.`);
+            document.getElementById('viewWaBtn').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
+            document.getElementById('modalDetail').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function renderAdmin() {
+            document.getElementById('adminTableBody').innerHTML = products.map(p => `
+                <tr class="hover:bg-stone-50 transition-colors">
+                    <td class="px-8 py-6 flex items-center gap-5">
+                        <div class="w-14 h-14 rounded-2xl overflow-hidden border border-stone-100">
+                            <img src="${p.image}" class="w-full h-full object-cover">
+                        </div>
+                        <span class="font-bold text-stone-700">${p.title}</span>
+                    </td>
+                    <td class="px-8 py-6 text-xs font-mono text-stone-300 font-bold">${p.code}</td>
+                    <td class="px-8 py-6 text-[10px] text-stone-400 font-bold uppercase tracking-widest">${p.category}</td>
+                    <td class="px-8 py-6 font-light text-stone-800 text-lg">R$ ${p.price.toFixed(2).replace('.', ',')}</td>
+                    <td class="px-8 py-6 text-center">
+                        <div class="flex justify-center gap-4">
+                            <button onclick="openForm(${p.id})" class="w-10 h-10 rounded-full bg-blue-50 text-blue-400 hover:bg-blue-100 transition-all"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteProduct(${p.id})" class="w-10 h-10 rounded-full bg-red-50 text-red-300 hover:bg-red-100 transition-all"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openForm(id = null) {
+            const form = document.getElementById('productForm');
+            form.reset();
+            const catSelect = document.getElementById('fCategory');
+            catSelect.innerHTML = settings.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            document.getElementById('formId').value = id || "";
+            document.getElementById('formTitle').innerText = id ? "Editar Peça" : "Nova Peça";
+
+            if(id) {
+                const p = products.find(x => x.id === id);
+                document.getElementById('fTitle').value = p.title;
+                document.getElementById('fCode').value = p.code;
+                document.getElementById('fPrice').value = p.price;
+                document.getElementById('fCategory').value = p.category;
+                document.getElementById('fImage').value = p.image;
+                document.getElementById('fDesc').value = p.description;
+            }
+            document.getElementById('modalForm').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        document.getElementById('productForm').onsubmit = function(e) {
+            e.preventDefault();
+            const id = document.getElementById('formId').value;
+            const newProduct = {
+                id: id ? parseInt(id) : Date.now(),
+                title: document.getElementById('fTitle').value,
+                code: document.getElementById('fCode').value.toUpperCase(),
+                price: parseFloat(document.getElementById('fPrice').value),
+                category: document.getElementById('fCategory').value,
+                image: document.getElementById('fImage').value,
+                description: document.getElementById('fDesc').value
+            };
+            if(id) {
+                const index = products.findIndex(p => p.id === parseInt(id));
+                products[index] = newProduct;
+            } else {
+                products.push(newProduct);
+            }
+            saveAndSync();
+            closeModal('modalForm');
+        };
+
+        function deleteProduct(id) {
+            if(confirm("Remover esta peça permanentemente?")) {
+                products = products.filter(p => p.id !== id);
+                saveAndSync();
+            }
+        }
+
+        function saveAndSync() {
+            localStorage.setItem('entre_products', JSON.stringify(products));
+            renderAdmin();
+            renderCatalog();
+        }
+
+        function closeModal(id) { 
+            document.getElementById(id).classList.add('hidden'); 
+            document.body.style.overflow = 'auto';
+        }
+
+        // Inicializa o sistema quando o DOM estiver pronto
+        window.onload = init;
+    </script>
+</body>
+</html>
